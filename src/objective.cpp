@@ -29,6 +29,8 @@
 #include <algorithm>
 #include <cmath>
 
+using namespace Eigen;
+
 /**** Learning Objectives ****/
 ObjectiveFunction::~ObjectiveFunction(){
 }
@@ -39,10 +41,10 @@ double LogLikelihood::evaluate( MatrixXf & d_mul_Q, const MatrixXf & Q ) const {
 	const int N = Q.cols(), M = Q.rows();
 	double r = 0;
 	d_mul_Q = 0*Q;
-	for( int i=0; i<N; i++ ) 
+	for( int i=0; i<N; i++ )
 		if( 0 <= gt_[i] && gt_[i] < M ) {
 			float QQ = std::max( Q(gt_[i],i)+robust_, 1e-20f );
-			// Make it negative since it's a 
+			// Make it negative since it's a
 			r += log(QQ) / N;
 			d_mul_Q(gt_[i],i) += Q(gt_[i],i) / QQ / N;
 		}
@@ -68,10 +70,10 @@ double Hamming::evaluate( MatrixXf & d_mul_Q, const MatrixXf & Q ) const {
 	const int N = Q.cols(), M = Q.rows();
 	double r = 0;
 	d_mul_Q = 0*Q;
-	for( int i=0; i<N; i++ ) 
+	for( int i=0; i<N; i++ )
 		if( 0 <= gt_[i] && gt_[i] < M ) {
 			float QQ = class_weight_[ gt_[i] ] * Q(gt_[i],i);
-			// Make it negative since it's a 
+			// Make it negative since it's a
 			r += QQ;
 			d_mul_Q(gt_[i],i) += QQ;
 		}
@@ -83,7 +85,7 @@ double IntersectionOverUnion::evaluate( MatrixXf & d_mul_Q, const MatrixXf & Q )
 	assert( gt_.rows() == Q.cols() );
 	const int N = Q.cols(), M = Q.rows();
 	d_mul_Q = 0*Q;
-	
+
 	VectorXd in(M), un(M);
 	in.fill(0.f);
 	un.fill(1e-20);
@@ -91,14 +93,14 @@ double IntersectionOverUnion::evaluate( MatrixXf & d_mul_Q, const MatrixXf & Q )
 		if( 0 <= gt_[i] && gt_[i] < M ) {
 			in[ gt_[i] ] += Q(gt_[i],i);
 			un[ gt_[i] ] += 1;
-			for( int l=0; l<M; l++ ) 
+			for( int l=0; l<M; l++ )
 				if( l!=gt_[i] )
 					un[ l ] += Q(l,i);
 		}
 	}
 	for( int i=0; i<N; i++ )
 		if( 0 <= gt_[i] && gt_[i] < M ) {
-			for( int l=0; l<M; l++ ) 
+			for( int l=0; l<M; l++ )
 				if( l==gt_[i] )
 					d_mul_Q(l,i) = Q(l,i) / (un[l]*M);
 				else
@@ -106,4 +108,3 @@ double IntersectionOverUnion::evaluate( MatrixXf & d_mul_Q, const MatrixXf & Q )
 		}
 	return (in.array()/un.array()).sum()/M;
 }
-

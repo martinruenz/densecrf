@@ -27,6 +27,8 @@
 #include "pairwise.h"
 #include <iostream>
 
+using namespace Eigen;
+
 Kernel::~Kernel() {
 }
 class DenseKernel: public Kernel {
@@ -40,9 +42,9 @@ protected:
 	void initLattice( const MatrixXf & f ) {
 		const int N = f.cols();
 		lattice_.init( f );
-		
+
 		norm_ = lattice_.compute( VectorXf::Ones( N ).transpose() ).transpose();
-		
+
 		if ( ntype_ == NO_NORMALIZATION ) {
 			float mean_norm = 0;
 			for ( int i=0; i<N; i++ )
@@ -66,14 +68,14 @@ protected:
 			out = in*norm_.asDiagonal();
 		else
 			out = in;
-	
+
 		// Filter
 		if( transpose )
 			lattice_.compute( out, out, true );
 		else
 			lattice_.compute( out, out );
 // 			lattice_.compute( out.data(), out.data(), out.rows() );
-	
+
 		// Normalize again
 		if( ntype_ == NORMALIZE_SYMMETRIC || (ntype_ == NORMALIZE_BEFORE && transpose) || (ntype_ == NORMALIZE_AFTER && !transpose))
 			out = out*norm_.asDiagonal();
@@ -97,7 +99,7 @@ protected:
 		}
 		else if (ntype_ == NORMALIZE_AFTER ) {
 			MatrixXf fb = lattice_.compute( b );
-			
+
 			MatrixXf ones = MatrixXf::Ones( a.rows(), a.cols() );
 			VectorXf norm2 = norm_.array()*norm_.array();
 			MatrixXf r = kernelGradient( ( a.array()*fb.array() ).matrix()*norm2.asDiagonal(), ones );
@@ -105,7 +107,7 @@ protected:
 		}
 		else /*if (ntype_ == NORMALIZE_BEFORE )*/ {
 			MatrixXf fa = lattice_.compute( a, true );
-			
+
 			MatrixXf ones = MatrixXf::Ones( a.rows(), a.cols() );
 			VectorXf norm2 = norm_.array()*norm_.array();
 			MatrixXf r = kernelGradient( ( fa.array()*b.array() ).matrix()*norm2.asDiagonal(), ones );
@@ -172,7 +174,7 @@ PairwisePotential::PairwisePotential(const MatrixXf & features, LabelCompatibili
 }
 void PairwisePotential::apply(MatrixXf & out, const MatrixXf & Q) const {
 	kernel_->apply( out, Q );
-	
+
 	// Apply the compatibility
 	compatibility_->apply( out, out );
 }

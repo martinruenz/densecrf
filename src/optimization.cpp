@@ -29,6 +29,8 @@
 #include <algorithm>
 #include <cstdio>
 
+using namespace Eigen;
+
 static lbfgsfloatval_t evaluate(
     void *instance,
     const lbfgsfloatval_t *x,
@@ -38,11 +40,11 @@ static lbfgsfloatval_t evaluate(
     )
 {
 	EnergyFunction * efun = static_cast<EnergyFunction*>( instance );
-	
+
 	VectorXf vx( n ), vg( n );
 	std::copy( x, x+n, vx.data() );
 	lbfgsfloatval_t r = efun->gradient( vx, vg );
-	
+
 	std::copy( vg.data(), vg.data()+n, g );
 	return r;
 }
@@ -68,20 +70,20 @@ static int progress(
 VectorXf minimizeLBFGS( EnergyFunction & efun, int restart, bool verbose ) {
 	VectorXf x0 = efun.initialValue();
 	const int n = x0.rows();
-	
+
 	lbfgsfloatval_t *x = lbfgs_malloc(n);
 	if (x == NULL) {
 		printf("ERROR: Failed to allocate a memory block for variables.\n");
 		return x0;
 	}
 	std::copy( x0.data(), x0.data()+n, x );
-	
+
 	lbfgs_parameter_t param;
 	lbfgs_parameter_init(&param);
 	// You might want to adjust the parameters to your problem
 	param.epsilon = 1e-6;
 	param.max_iterations = 50;
-	
+
 	double last_f = 1e100;
 	int ret;
 	for( int i=0; i<=restart; i++ ) {
@@ -92,11 +94,11 @@ VectorXf minimizeLBFGS( EnergyFunction & efun, int restart, bool verbose ) {
 		else
 			break;
 	}
-	
+
 	if ( verbose ) {
 		printf("L-BFGS optimization terminated with status code = %d\n", ret);
 	}
-	
+
 	std::copy( x, x+n, x0.data() );
 	lbfgs_free(x);
 	return x0;
@@ -132,4 +134,3 @@ VectorXf computeFunction( EnergyFunction & efun, const VectorXf & x, const Vecto
 		r[i] = efun.gradient( x+i*dx, tmp );
 	return r;
 }
-

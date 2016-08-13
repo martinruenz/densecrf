@@ -33,6 +33,8 @@
 #include <cstring>
 #include <iostream>
 
+using namespace Eigen;
+
 /////////////////////////////
 /////  Alloc / Dealloc  /////
 /////////////////////////////
@@ -95,7 +97,7 @@ void  DenseCRF::setUnaryEnergy( const MatrixXf & L, const MatrixXf & f ) {
 ///////////////////////
 /////  Inference  /////
 ///////////////////////
-void expAndNormalize ( MatrixXf & out, const MatrixXf & in ) {
+void DenseCRF::expAndNormalize ( MatrixXf & out, const MatrixXf & in ) {
 	out.resize( in.rows(), in.cols() );
 	for( int i=0; i<out.cols(); i++ ){
 		VectorXf b = in.col(i);
@@ -118,7 +120,7 @@ MatrixXf DenseCRF::inference ( int n_iterations ) const {
 	if( unary_ )
 		unary = unary_->get();
 	expAndNormalize( Q, -unary );
-	
+
 	for( int it=0; it<n_iterations; it++ ) {
 		tmp1 = -unary;
 		for( unsigned int k=0; k<pairwise_.size(); k++ ) {
@@ -144,7 +146,7 @@ VectorXf DenseCRF::unaryEnergy(const VectorXs & l) {
 	r.fill(0.f);
 	if( unary_ ) {
 		MatrixXf unary = unary_->get();
-		
+
 		for( int i=0; i<N_; i++ )
 			if ( 0 <= l[i] && l[i] < M_ )
 				r[i] = unary( l[i], i );
@@ -155,13 +157,13 @@ VectorXf DenseCRF::pairwiseEnergy(const VectorXs & l, int term) {
 	assert( l.cols() == N_ );
 	VectorXf r( N_ );
 	r.fill(0.f);
-	
+
 	if( term == -1 ) {
 		for( unsigned int i=0; i<pairwise_.size(); i++ )
 			r += pairwiseEnergy( l, i );
 		return r;
 	}
-	
+
 	MatrixXf Q( M_, N_ );
 	// Build the current belief [binary assignment]
 	for( int i=0; i<N_; i++ )
@@ -178,7 +180,7 @@ VectorXf DenseCRF::pairwiseEnergy(const VectorXs & l, int term) {
 MatrixXf DenseCRF::startInference() const{
 	MatrixXf Q( M_, N_ );
 	Q.fill(0);
-	
+
 	// Initialize using the unary energies
 	if( unary_ )
 		expAndNormalize( Q, -unary_->get() );
@@ -189,13 +191,13 @@ void DenseCRF::stepInference( MatrixXf & Q, MatrixXf & tmp1, MatrixXf & tmp2 ) c
 	tmp1.fill(0);
 	if( unary_ )
 		tmp1 -= unary_->get();
-	
+
 	// Add up all pairwise potentials
 	for( unsigned int k=0; k<pairwise_.size(); k++ ) {
 		pairwise_[k]->apply( tmp2, Q );
 		tmp1 -= tmp2;
 	}
-	
+
 	// Exponentiate and normalize
 	expAndNormalize( Q, tmp1 );
 }
@@ -224,7 +226,7 @@ double DenseCRF::klDivergence( const MatrixXf & Q ) const {
 			for( int l=0; l<Q.rows(); l++ )
 				kl += unary(l,i)*Q(l,i);
 	}
-	
+
 	// Add all pairwise terms
 	MatrixXf tmp;
 	for( unsigned int k=0; k<pairwise_.size(); k++ ) {
@@ -251,7 +253,7 @@ double DenseCRF::gradient( int n_iterations, const ObjectiveFunction & objective
 		}
 		expAndNormalize( Q[it+1], tmp1 );
 	}
-	
+
 	// Compute the objective value
 	MatrixXf b( M_, N_ );
 	double r = objective.evaluate( b, Q[n_iterations] );
@@ -264,7 +266,7 @@ double DenseCRF::gradient( int n_iterations, const ObjectiveFunction & objective
 		*lbl_cmp_grad = 0*labelCompatibilityParameters();
 	if( kernel_grad )
 		*kernel_grad = 0*kernelParameters();
-	
+
 	for( int it=n_iterations-1; it>=0; it-- ) {
 		// Do the inverse message passing
 		tmp1.fill(0);
@@ -288,7 +290,7 @@ double DenseCRF::gradient( int n_iterations, const ObjectiveFunction & objective
 			tmp1 += tmp2;
 		}
 		sumAndNormalize( b, tmp1.array()*Q[it].array(), Q[it] );
-		
+
 		// Add the gradient
 		if(unary_grad && unary_)
 			*unary_grad += unary_->gradient( b );
@@ -315,7 +317,7 @@ VectorXf DenseCRF::labelCompatibilityParameters() const {
 	for( unsigned int k=0,i=0; k<pairwise_.size(); k++ ) {
 		r.segment( i, terms[k].rows() ) = terms[k];
 		i += terms[k].rows();
-	}	
+	}
 	return r;
 }
 void DenseCRF::setLabelCompatibilityParameters( const VectorXf & v ) {
@@ -325,11 +327,11 @@ void DenseCRF::setLabelCompatibilityParameters( const VectorXf & v ) {
 	int np=0;
 	for( unsigned int k=0; k<pairwise_.size(); k++ )
 		np += n[k];
-	
+
 	for( unsigned int k=0,i=0; k<pairwise_.size(); k++ ) {
 		pairwise_[k]->setParameters( v.segment( i, n[k] ) );
 		i += n[k];
-	}	
+	}
 }
 VectorXf DenseCRF::kernelParameters() const {
 	std::vector< VectorXf > terms;
@@ -342,7 +344,7 @@ VectorXf DenseCRF::kernelParameters() const {
 	for( unsigned int k=0,i=0; k<pairwise_.size(); k++ ) {
 		r.segment( i, terms[k].rows() ) = terms[k];
 		i += terms[k].rows();
-	}	
+	}
 	return r;
 }
 void DenseCRF::setKernelParameters( const VectorXf & v ) {
@@ -352,9 +354,9 @@ void DenseCRF::setKernelParameters( const VectorXf & v ) {
 	int np=0;
 	for( unsigned int k=0; k<pairwise_.size(); k++ )
 		np += n[k];
-	
+
 	for( unsigned int k=0,i=0; k<pairwise_.size(); k++ ) {
 		pairwise_[k]->setKernelParameters( v.segment( i, n[k] ) );
 		i += n[k];
-	}	
+	}
 }

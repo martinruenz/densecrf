@@ -26,6 +26,7 @@
 */
 #include "unary.h"
 
+using namespace Eigen;
 
 UnaryEnergy::~UnaryEnergy() {
 }

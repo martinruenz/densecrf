@@ -26,6 +26,8 @@
 */
 #include "labelcompatibility.h"
 
+using namespace Eigen;
+
 LabelCompatibility::~LabelCompatibility() {
 }
 void LabelCompatibility::applyTranspose( MatrixXf & out, const MatrixXf & Q ) const {
@@ -106,4 +108,3 @@ VectorXf MatrixCompatibility::gradient( const MatrixXf & b, const MatrixXf & Q )
 			r[k] = g(i,j) + (i!=j?g(j,i):0.f);
 	return r;
 }
-	
