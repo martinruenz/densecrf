@@ -9,10 +9,12 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse -msse2 -msse3")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3") # Test -Ofast
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
 
-find_package(Eigen3 REQUIRED)
+find_package(PkgConfig)
 
-include_directories(${EIGEN3_INCLUDE_DIR})
-include_directories( include )
+pkg_search_module(Eigen3 REQUIRED eigen3)
+include_directories(${Eigen3_INCLUDE_DIRS})
+
+include_directories(include)
 
 add_subdirectory (src)
 #add_subdirectory (examples)
